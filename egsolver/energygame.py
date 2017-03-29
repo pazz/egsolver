@@ -48,19 +48,22 @@ class Game(DiGraph):
                                        edges=elist_json,
                                        )
 
-    def format(self, fmt='eg', out=None, solver=None):
+    def format(self, fmt='eg'):
         # we'll write to a file object, since networkx's formatter are weird..
-        out = out or StringIO()
+        out = StringIO()
 
         if fmt == 'eg':
             out.write(self.to_game_string())
 
         elif fmt == 'dot':
-            def propfmt(prop):
-                return "{}=\"{}\"".format(*prop)
+            def propfmt(k, v):
+                fmt = "{}={}"
+                if type(v) == str:
+                    fmt = "{}=\"{}\""
+                return fmt.format(k, v)
 
             def propsfmt(props):
-                return ", ".join([propfmt(it) for it in props.items()])
+                return ", ".join([propfmt(k, v) for k, v in props.items()])
 
             def dotnode(v):
                 return "%d [%s];" % (v, propsfmt(self.node[v]))
@@ -87,17 +90,17 @@ class EnergyGame(Game):
         return [v for v in self.nodes() if self.node[v]['owner'] == player]
 
     def weight(self, e):
-        """ shortcut to extract the weight of an edge """
+        """ shortcut to extract the effect of an edge """
         src, trg = e
-        return self.edge[src][trg]['weight']
+        return self.edge[src][trg]['effect']
 
     def __str__(self):
         return self.format('eg')
 
     def maxdrop(self, node=None):
-        def min_successor_weight(v):
-            return min([0] + [self[v][nbr]['weight'] for nbr in self[v]])
+        def min_successor_effect(v):
+            return min([0] + [self[v][nbr]['effect'] for nbr in self[v]])
         if node is None:
-            return max(-min(0, min_successor_weight(v)) for v in self.nodes())
+            return max(-min(0, min_successor_effect(v)) for v in self.nodes())
         else:
-            return -min(0, min_successor_weight(node))
+            return -min(0, min_successor_effect(node))
