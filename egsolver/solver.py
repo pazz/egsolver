@@ -7,9 +7,7 @@ import numpy as np
 
 
 class Solver(object):
-    """
-    Solver base class
-    """
+    """ Solver base class """
 
     def __init__(self, eg):
         self.game = eg
@@ -27,7 +25,7 @@ class Solver(object):
         if win:
             def opt_succ(v):
                 # get all winning successor nodes
-                winsuccs = [t for t in self.game.successors(v) if win[t] >= 0]
+                winsuccs = [t for t in eg.successors(v) if win[t] >= 0]
 
                 # pick the one where its value after getting there is minimal
                 def needs_energy(t):
@@ -65,7 +63,7 @@ class ProgressMeasureSolver(Solver):
         weightmatrix = np.ma.array(weightmatrix, mask=np.invert(adj))
 
         # compute top element above with we cut off
-        cutoff = sum(eg.maxdrop(v) for v in eg)
+        cutoff = sum(eg.maxdrop(v) for v in eg) + 1
         top = cutoff + eg.maxdrop()
         logging.debug("TOP = %d" % top)
 
@@ -89,7 +87,7 @@ class ProgressMeasureSolver(Solver):
         bestfor = {0: np.min, 1: np.max}  # player 0 is the minimizer
 
         def lift(v):
-            lifts = (pm - weightmatrix[v])
+            lifts = (pm - weightmatrix[v]).clip(min=0)
             logging.debug("lifts: %s" % lifts)
             # mask everything above equal to top
             # lifts = np.ma.masked_where(lifts >= top, lifts)
