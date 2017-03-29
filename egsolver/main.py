@@ -6,10 +6,12 @@ from timeit import timeit
 import argparse
 import logging
 import json
+import networkx as nx
 
 from .energygame import EnergyGame
 from .solver import ProgressMeasureSolver as Solver
 from .generators import random_energy_game
+from .formatters import FORMATTERS
 from . import __version__, __shortinfo__
 
 
@@ -43,17 +45,8 @@ def solve(args):
     logging.info("done in %fs" % delay)
 
     logging.info("writing output..")
-    opt = solver.optimal_strategy()
-    if args.outfmt == "report":
-        output = "winning region: %s\n" % solver.win
-        output += "an optimal strategy: %s" % opt
-    elif args.outfmt == "json":
-        logging.info(solver.win)
-        output = json.dumps({'win': solver.win, 'opt': opt})
-    else:
-        output = eg.format(args.outfmt, solver=solver)
-    output += "\n"
-    args.outfile.write(output)
+    formatter = FORMATTERS[args.outfmt]
+    args.outfile.write(formatter(eg, solver))
 
 
 COMMANDS = {
@@ -111,7 +104,7 @@ def main():
     parser_solve.add_argument('outfile', nargs='?', help=outfile_help,
                               type=argparse.FileType('w'), default=sys.stdout)
     parser_solve.add_argument('-f', '-outfmt', dest='outfmt', default='report',
-                              choices=['dot', 'report', 'json'],
+                              choices=FORMATTERS.keys(),
                               help='output format; defaults to \'report\'')
 
     # parse arguments
