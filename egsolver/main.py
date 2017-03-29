@@ -16,7 +16,7 @@ from . import __version__, __shortinfo__
 def convert(args):
     """ convert game description to another format """
     logging.info("parsing input..")
-    eg = EnergyGame.from_string(args.infile.read())
+    eg = EnergyGame.from_game_string(args.infile.read())
     logging.debug("got game:\n%s" % eg)
     logging.info("writing output..")
     args.outfile.write(eg.format(args.outfmt))
@@ -24,7 +24,7 @@ def convert(args):
 
 def generate(args):
     """ generate a random game """
-    eg = random_energy_game(args.n, args.d, args.o, args.w, -args.w,
+    eg = random_energy_game(args.n, args.d, args.o, args.e, -args.e,
                             args.nosinks)
     args.outfile.write(eg.format('eg'))
 
@@ -32,7 +32,7 @@ def generate(args):
 def solve(args):
     """ solve a game """
     logging.info("parsing input..")
-    eg = EnergyGame.from_string(args.infile.read())
+    eg = EnergyGame.from_game_string(args.infile.read())
     logging.debug("got game:\n%s" % eg)
 
     logging.info("instanciating solver..")
@@ -97,7 +97,7 @@ def main():
     parser_generate.add_argument('n', type=int, help='number of nodes')
     parser_generate.add_argument('d', type=float, help='density of edges')
     parser_generate.add_argument('o', type=float, help='density of owner')
-    parser_generate.add_argument('w', type=int, help='max weight')
+    parser_generate.add_argument('e', type=int, help='max effect')
     parser_generate.add_argument('-s', '--nosinks', action='store_true',
                                  help='replace sinks with negative self-loops')
     parser_generate.add_argument('outfile', nargs='?', help=outfile_help,
