@@ -1,6 +1,7 @@
 # Copyright (C) 2017  Patrick Totzke <patricktotzke@gmail.com>
 # This file is released under the GNU GPL, version 3 or a later revision.
 
+import logging
 import json
 import networkx as nx
 
@@ -46,6 +47,16 @@ def game_format_dot(game):
         s, t = e
         return "%d -> %d [%s];" % (s, t, propsfmt(game.edge[s][t]))
 
+    # shape nodes according to owner
+    effect = nx.get_edge_attributes(game, "effect")
+    nx.set_edge_attributes(game, "label", effect)
+
+    # shape nodes according to owner
+    shape = {}
+    for v in game.nodes():
+        shape[v] = "box" if game.node[v]['owner'] else "diamond"
+    nx.set_node_attributes(game, "shape", shape)
+
     return "digraph G {{\n{}\n{}\n}}\n".format(
         '\n'.join([dotnode(v) for v in game.nodes()]),
         '\n'.join([dotedge(e) for e in game.edges()])
@@ -59,7 +70,7 @@ GAME_FORMATTERS = {
 
 def result_format_report(game, solver):
     output = "winning region: %s\n" % solver.win
-    output += "an optimal strategy: %s" % solver.optimal_strategy()
+    #output += "an optimal strategy: %s" % solver.optimal_strategy()
     return output
 
 
@@ -70,11 +81,27 @@ def result_format_json(game, solver):
 
 def result_format_dot(game, solver):
     win = solver.win
+    opt = solver.optimal_strategy()
     nx.set_node_attributes(game, "win", win)
+
+    # color nodes according to who wins
+    logging.debug(opt)
+    logging.debug(win)
     color = {}
     for v in game.nodes():
         color[v] = "green" if win[v] >= 0 else "red"
     nx.set_node_attributes(game, "color", color)
+
+    # color edges to indicat optimal moves
+    color = {}
+    for src, trg in game.edges():
+        logging.debug(src)
+        #logging.debug(win[src]>=0)
+        #logging.debug(opt[src]>=0)
+        #if win[src] >= 0:
+        #    if opt[src] == trg:
+        #        color[v] = "green"
+    #nx.set_edge_attributes(game, "color", color)
     return game_format_dot(game)
 
 
