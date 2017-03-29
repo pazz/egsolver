@@ -1,10 +1,9 @@
 # Copyright (C) 2017  Patrick Totzke <patricktotzke@gmail.com>
 # This file is released under the GNU GPL, version 3 or a later revision.
 
+import logging
 import networkx as nx
 import numpy as np
-from numpy.ma import masked
-import logging
 
 
 class Solver(object):
@@ -23,8 +22,6 @@ class Solver(object):
         eg = self.game
         win = self.win
         weight = self.game.weight
-        nodes = self.game.nodes()
-        #nodes = [v in self.game.nodes() if self.game.node[v]['owner']==1]
         playernodes = eg.playernodes(0)
 
         if win:
@@ -36,7 +33,7 @@ class Solver(object):
                 def needs_energy(t):
                     return win[t] - weight((v, t))
                 return min(winsuccs, key=needs_energy)
-            opt = {v:opt_succ(v) for v in playernodes if win[v] >= 0}
+            opt = {v: opt_succ(v) for v in playernodes if win[v] >= 0}
         else:
             opt = {}
         return opt
@@ -85,7 +82,7 @@ class ProgressMeasureSolver(Solver):
 
         # define formatter used in logging etc
         def as_set(bm):
-            return {v for v in eg.nodes() if bm[0,v]}
+            return {v for v in eg.nodes() if bm[0, v]}
         logging.debug("dirty: %s" % as_set(dirty))
 
         # compute the new measure for state v
@@ -95,8 +92,8 @@ class ProgressMeasureSolver(Solver):
             lifts = (pm - weightmatrix[v])
             logging.debug("lifts: %s" % lifts)
             # mask everything above equal to top
-            #lifts = np.ma.masked_where(lifts >= top, lifts)
-            #logging.debug("lifts masked: %s" % lifts)
+            # lifts = np.ma.masked_where(lifts >= top, lifts)
+            # logging.debug("lifts masked: %s" % lifts)
             return bestfor[owner[v]](lifts)
 
         # main loop
@@ -105,7 +102,7 @@ class ProgressMeasureSolver(Solver):
             logging.debug("dirty states: %s" % as_set(dirty))
 
             v = dirty.argmax()   # pick some dirty state
-            dirty[0,v] = False   # mark it not dirty
+            dirty[0, v] = False   # mark it not dirty
             logging.debug("considering state %d" % v)
 
             # compute new measure and remember previous one for comparison
@@ -117,7 +114,7 @@ class ProgressMeasureSolver(Solver):
             # really update?
             # the complication is due to our use of numpy.ma.masked for top:
             # equality tests on them via == always return masked ~ False.
-            #if (nextval is masked and pm is not masked):
+            # if (nextval is masked and pm is not masked):
             #    pm[v] = top
             if (nextval > pm[v]):
                 pm[v] = nextval
@@ -125,10 +122,10 @@ class ProgressMeasureSolver(Solver):
                 # mark predecessors dirty if there are any
                 if adj.T[v].any():
                     logging.debug("enqueue predecessors: %s" % as_set(adj.T[v]))
-                    np.bitwise_or(dirty,adj.T[v], out=dirty)
+                    np.bitwise_or(dirty, adj.T[v], out=dirty)
 
         # remember and return the progress measure = winning region
         def top_as_minus_one(i):
             return -1 if i == top else int(i)
-        self.win = {v:top_as_minus_one(pm[v]) for v in eg.nodes()}
+        self.win = {v: top_as_minus_one(pm[v]) for v in eg.nodes()}
         return self.win

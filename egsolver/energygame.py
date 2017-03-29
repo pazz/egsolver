@@ -65,8 +65,8 @@ class EnergyGame(DiGraph):
                                               self.node[v].get('label', ''))
 
             def edgestr(e):
-                s,t = e
-                return "edge %d %d %d" % (s,t, self[s][t]['weight'])
+                s, t = e
+                return "edge %d %d %d" % (s, t, self[s][t]['weight'])
 
             out.write("\n".join(
                 [nodestr(v) for v in self.nodes()] +
@@ -100,10 +100,10 @@ class EnergyGame(DiGraph):
                 }
                 if win and (src in opt) and src in self.playernodes(0)\
                    and (trg == opt[src]):
-                    fmt= "{src} -> {trg} [label=\"{lbl}\", color=\"{col}\"];"
+                    fmt = "{src} -> {trg} [label=\"{lbl}\", color=\"{col}\"];"
                     info['col'] = "green"
                 else:
-                    fmt= "{src} -> {trg} [label=\"{lbl}\"];"
+                    fmt = "{src} -> {trg} [label=\"{lbl}\"];"
                 return fmt.format(**info)
 
             out.write("digraph G {{\n{}\n{}\n}}\n".format(
@@ -132,5 +132,3 @@ class EnergyGame(DiGraph):
             return max(-min(0, min_successor_weight(v)) for v in self.nodes())
         else:
             return -min(0, min_successor_weight(node))
-
-
