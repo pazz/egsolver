@@ -56,45 +56,25 @@ class Game(DiGraph):
             out.write(self.to_game_string())
 
         elif fmt == 'dot':
-            for n in self.nodes():
-                for k,v in self.node[0].items():
-                    logging.debug("node %d has prop %s:%s" % (n, k, v))
-#            def dotnode(v):
-#                info = {
-#                    'id': v,
-#                    'shape': "box" if self.node[v]['owner'] else "diamond",
-#                    'label': self.node[v].get('label', '') or str(v)
-#                }
-#                if win:
-#                    fmt = "{id} [shape=\"{shape}\"," \
-#                        "label=\"{label}\", color=\"{color}\"];"
-#                    info['color'] = "red"
-#                    if win[v] >= 0:
-#                        info['color'] = "green"
-#                        info['label'] += (": %s" % win[v])
-#                else:
-#                    fmt = "{id} [shape=\"{shape}\", label=\"{label}\"];"
-#                return fmt.format(**info)
-#
-#            def dotedge(e):
-#                src, trg = e
-#                info = {
-#                    'src': src,
-#                    'trg': trg,
-#                    'lbl': self[src][trg]['weight']
-#                }
-#                if win and (src in opt) and src in self.playernodes(0)\
-#                   and (trg == opt[src]):
-#                    fmt = "{src} -> {trg} [label=\"{lbl}\", color=\"{col}\"];"
-#                    info['col'] = "green"
-#                else:
-#                    fmt = "{src} -> {trg} [label=\"{lbl}\"];"
-#                return fmt.format(**info)
-#
-#            out.write("digraph G {{\n{}\n{}\n}}\n".format(
-#                '\n'.join([dotnode(v) for v in self.nodes()]),
-#                '\n'.join([dotedge(e) for e in self.edges()])
-#            ))
+            def propfmt(prop):
+                return "{}=\"{}\"".format(*prop)
+
+            def propsfmt(props):
+                return ", ".join([propfmt(it) for it in props.items()])
+
+            def dotnode(v):
+                return "%d [%s];" % (v, propsfmt(self.node[v]))
+
+                return "%d [%s];" % (v, propsfmt(self.node[v]))
+
+            def dotedge(e):
+                s, t = e
+                return "%d -> %d [%s];" % (s, t, propsfmt(self.edge[s][t]))
+
+            out.write("digraph G {{\n{}\n{}\n}}\n".format(
+                '\n'.join([dotnode(v) for v in self.nodes()]),
+                '\n'.join([dotedge(e) for e in self.edges()])
+            ))
         else:
             logging.error("unknown format %s" % fmt)
         return out.getvalue()
