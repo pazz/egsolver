@@ -5,13 +5,11 @@ import sys
 from timeit import timeit
 import argparse
 import logging
-import json
-import networkx as nx
 
 from .energygame import EnergyGame
 from .solver import ProgressMeasureSolver as Solver
 from .generators import random_energy_game
-from .formatters import FORMATTERS
+from .formatters import GAME_FORMATTERS, RESULT_FORMATTERS
 from . import __version__, __shortinfo__
 
 
@@ -21,14 +19,16 @@ def convert(args):
     eg = EnergyGame.from_game_string(args.infile.read())
     logging.debug("got game:\n%s" % eg)
     logging.info("writing output..")
-    args.outfile.write(eg.format(args.outfmt))
+    formatter = GAME_FORMATTERS[args.outfmt]
+    args.outfile.write(formatter(eg))
 
 
 def generate(args):
     """ generate a random game """
     eg = random_energy_game(args.n, args.d, args.o, args.e, -args.e,
                             args.nosinks)
-    args.outfile.write(eg.format('eg'))
+    formatter = GAME_FORMATTERS[args.outfmt]
+    args.outfile.write(formatter(eg))
 
 
 def solve(args):
@@ -45,7 +45,7 @@ def solve(args):
     logging.info("done in %fs" % delay)
 
     logging.info("writing output..")
-    formatter = FORMATTERS[args.outfmt]
+    formatter = RESULT_FORMATTERS[args.outfmt]
     args.outfile.write(formatter(eg, solver))
 
 
@@ -69,8 +69,7 @@ def main():
                         help='increase verbosity')
     parser.add_argument('--version', action='version', version=__version__)
     parser.add_argument('-l', '--logfile', help=logfile_help,
-                        type=argparse.FileType('w'),
-                        default=sys.stdout)
+                        type=argparse.FileType('w'), default=sys.stdout)
     subparsers = parser.add_subparsers(title="commands", dest='cmd')
 
     # parameters for the 'convert' subcommand
@@ -81,8 +80,7 @@ def main():
                                 type=argparse.FileType('w'),
                                 default=sys.stdout)
     parser_convert.add_argument('-f', '-outfmt', dest='outfmt',
-                                choices=['eg', 'dot'],
-                                default='eg',
+                                choices=GAME_FORMATTERS.keys(), default='eg',
                                 help='output format; defaults to \'eg\'')
 
     # parameters for the 'generate' subcommand
@@ -93,6 +91,9 @@ def main():
     parser_generate.add_argument('e', type=int, help='max effect')
     parser_generate.add_argument('-s', '--nosinks', action='store_true',
                                  help='replace sinks with negative self-loops')
+    parser_generate.add_argument('-f', '-outfmt', dest='outfmt',
+                                 choices=GAME_FORMATTERS.keys(), default='eg',
+                                 help='output format; defaults to \'eg\'')
     parser_generate.add_argument('outfile', nargs='?', help=outfile_help,
                                  type=argparse.FileType('w'),
                                  default=sys.stdout)
@@ -104,7 +105,7 @@ def main():
     parser_solve.add_argument('outfile', nargs='?', help=outfile_help,
                               type=argparse.FileType('w'), default=sys.stdout)
     parser_solve.add_argument('-f', '-outfmt', dest='outfmt', default='report',
-                              choices=FORMATTERS.keys(),
+                              choices=RESULT_FORMATTERS.keys(),
                               help='output format; defaults to \'report\'')
 
     # parse arguments
