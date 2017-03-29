@@ -5,34 +5,36 @@ import sys
 from timeit import timeit
 import argparse
 import logging
-import json
 
 from .energygame import EnergyGame
 from .solver import ProgressMeasureSolver as Solver
 from .generators import random_energy_game
+from .formatters import GAME_FORMATTERS, RESULT_FORMATTERS
 from . import __version__, __shortinfo__
 
 
 def convert(args):
     """ convert game description to another format """
     logging.info("parsing input..")
-    eg = EnergyGame.from_string(args.infile.read())
+    eg = EnergyGame.from_game_string(args.infile.read())
     logging.debug("got game:\n%s" % eg)
     logging.info("writing output..")
-    args.outfile.write(eg.format(args.outfmt))
+    formatter = GAME_FORMATTERS[args.outfmt]
+    args.outfile.write(formatter(eg))
 
 
 def generate(args):
     """ generate a random game """
-    eg = random_energy_game(args.n, args.d, args.o, args.w, -args.w,
+    eg = random_energy_game(args.n, args.d, args.o, args.e, -args.e,
                             args.nosinks)
-    args.outfile.write(eg.format('eg'))
+    formatter = GAME_FORMATTERS[args.outfmt]
+    args.outfile.write(formatter(eg))
 
 
 def solve(args):
     """ solve a game """
     logging.info("parsing input..")
-    eg = EnergyGame.from_string(args.infile.read())
+    eg = EnergyGame.from_game_string(args.infile.read())
     logging.debug("got game:\n%s" % eg)
 
     logging.info("instanciating solver..")
@@ -43,17 +45,8 @@ def solve(args):
     logging.info("done in %fs" % delay)
 
     logging.info("writing output..")
-    opt = solver.optimal_strategy()
-    if args.outfmt == "report":
-        output = "winning region: %s\n" % solver.win
-        output += "an optimal strategy: %s" % opt
-    elif args.outfmt == "json":
-        logging.info(solver.win)
-        output = json.dumps({'win': solver.win, 'opt': opt})
-    else:
-        output = eg.format(args.outfmt, solver=solver)
-    output += "\n"
-    args.outfile.write(output)
+    formatter = RESULT_FORMATTERS[args.outfmt]
+    args.outfile.write(formatter(eg, solver))
 
 
 COMMANDS = {
@@ -76,8 +69,7 @@ def main():
                         help='increase verbosity')
     parser.add_argument('--version', action='version', version=__version__)
     parser.add_argument('-l', '--logfile', help=logfile_help,
-                        type=argparse.FileType('w'),
-                        default=sys.stdout)
+                        type=argparse.FileType('w'), default=sys.stdout)
     subparsers = parser.add_subparsers(title="commands", dest='cmd')
 
     # parameters for the 'convert' subcommand
@@ -88,8 +80,7 @@ def main():
                                 type=argparse.FileType('w'),
                                 default=sys.stdout)
     parser_convert.add_argument('-f', '-outfmt', dest='outfmt',
-                                choices=['eg', 'dot'],
-                                default='eg',
+                                choices=GAME_FORMATTERS.keys(), default='eg',
                                 help='output format; defaults to \'eg\'')
 
     # parameters for the 'generate' subcommand
@@ -97,9 +88,12 @@ def main():
     parser_generate.add_argument('n', type=int, help='number of nodes')
     parser_generate.add_argument('d', type=float, help='density of edges')
     parser_generate.add_argument('o', type=float, help='density of owner')
-    parser_generate.add_argument('w', type=int, help='max weight')
+    parser_generate.add_argument('e', type=int, help='max effect')
     parser_generate.add_argument('-s', '--nosinks', action='store_true',
                                  help='replace sinks with negative self-loops')
+    parser_generate.add_argument('-f', '-outfmt', dest='outfmt',
+                                 choices=GAME_FORMATTERS.keys(), default='eg',
+                                 help='output format; defaults to \'eg\'')
     parser_generate.add_argument('outfile', nargs='?', help=outfile_help,
                                  type=argparse.FileType('w'),
                                  default=sys.stdout)
@@ -111,7 +105,7 @@ def main():
     parser_solve.add_argument('outfile', nargs='?', help=outfile_help,
                               type=argparse.FileType('w'), default=sys.stdout)
     parser_solve.add_argument('-f', '-outfmt', dest='outfmt', default='report',
-                              choices=['dot', 'report', 'json'],
+                              choices=RESULT_FORMATTERS.keys(),
                               help='output format; defaults to \'report\'')
 
     # parse arguments
