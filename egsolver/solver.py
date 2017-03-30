@@ -59,24 +59,25 @@ class ProgressMeasureSolver(Solver):
 
         # get adjacency matrix and a weight matrix with non-edges masked
         adj = nx.to_numpy_matrix(eg, nonedge=0, weight=None).astype(np.bool)
-        weightmatrix = nx.to_numpy_matrix(eg).astype(np.int)
+        weightmatrix = nx.to_numpy_matrix(eg, weight="effect").astype(np.int)
         weightmatrix = np.ma.array(weightmatrix, mask=np.invert(adj))
 
         # compute top element above with we cut off
         cutoff = sum(eg.maxdrop(v) for v in eg) + 1
-        top = cutoff + eg.maxdrop()
+        logging.debug("CUTOFF = %d" % cutoff)
+        top = cutoff + max(eg.maxdrop(), 1)
         logging.debug("TOP = %d" % top)
+
+        # bitvector to remember set of states to reconsider
+        dirty = np.matrix([True] * n)
 
         # initialize progress measure
         # we'll use an intvector with (initially empty) bitmask
-        # sinks are already top, i.e. losing.
         pm = np.zeros(n, dtype=np.int).view(np.ma.MaskedArray)
-        for v in eg.nodes():
+        for v in eg.nodes():  # sinks should be losing.
             if not adj[v].any():
-                pm[v] = top
-
-        # bitvector to remember set of dirty states
-        dirty = np.matrix([True] * n)
+                pm[v] = top   # mark them so
+                dirty[0, v] = False   # mark them as done
 
         # define formatter used in logging etc
         def as_set(bm):
@@ -87,11 +88,9 @@ class ProgressMeasureSolver(Solver):
         bestfor = {0: np.min, 1: np.max}  # player 0 is the minimizer
 
         def lift(v):
-            lifts = (pm - weightmatrix[v]).clip(min=0)
+            # TODO: only do this for successors of v
+            lifts = (pm - weightmatrix[v])
             logging.debug("lifts: %s" % lifts)
-            # mask everything above equal to top
-            # lifts = np.ma.masked_where(lifts >= top, lifts)
-            # logging.debug("lifts masked: %s" % lifts)
             return bestfor[owner[v]](lifts)
 
         # main loop
@@ -105,15 +104,11 @@ class ProgressMeasureSolver(Solver):
 
             # compute new measure and remember previous one for comparison
             nextval = lift(v)
-            logging.debug("the new value for state %d is %s" % (v, nextval))
-            if nextval >= cutoff:
+            if (nextval >= cutoff) or (nextval is np.ma.masked):
                 nextval = top
+            logging.debug("the new value for state %d is %s" % (v, nextval))
 
-            # really update?
-            # the complication is due to our use of numpy.ma.masked for top:
-            # equality tests on them via == always return masked ~ False.
-            # if (nextval is masked and pm is not masked):
-            #    pm[v] = top
+            # really update only on strict increases
             if (nextval > pm[v]):
                 pm[v] = nextval
 
@@ -121,8 +116,11 @@ class ProgressMeasureSolver(Solver):
                 if adj.T[v].any():
                     logging.debug("enqueue predecessors: %s" % as_set(adj.T[v]))
                     np.bitwise_or(dirty, adj.T[v], out=dirty)
+                    # TODO: don't enqueue sinks
 
+        logging.debug("measure: %s" % pm)
         # remember and return the progress measure = winning region
+
         def top_as_minus_one(i):
             return -1 if i == top else int(i)
         self.win = {v: top_as_minus_one(pm[v]) for v in eg.nodes()}
