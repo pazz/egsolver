@@ -88,20 +88,22 @@ def result_format_dot(game, solver):
     logging.debug(opt)
     logging.debug(win)
     color = {}
+    label = {}
     for v in game.nodes():
         color[v] = "green" if win[v] >= 0 else "red"
+        label[v] = "%d (%d)" % (v, win[v]) if win[v]>=0 else str(v)
+
+    nx.set_node_attributes(game, "label", label)
     nx.set_node_attributes(game, "color", color)
 
-    # color edges to indicat optimal moves
+    # color edges to indicate optimal moves
     color = {}
     for src, trg in game.edges():
-        logging.debug(src)
-        #logging.debug(win[src]>=0)
-        #logging.debug(opt[src]>=0)
-        #if win[src] >= 0:
-        #    if opt[src] == trg:
-        #        color[v] = "green"
-    #nx.set_edge_attributes(game, "color", color)
+        if src in opt and opt[src] == trg:
+            color[(src,trg)] = "green"
+    logging.debug(color)
+    nx.set_edge_attributes(game, "color", color)
+
     return game_format_dot(game)
 
 

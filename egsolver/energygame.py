@@ -1,11 +1,11 @@
 # Copyright (C) 2017  Patrick Totzke <patricktotzke@gmail.com>
 # This file is released under the GNU GPL, version 3 or a later revision.
 
-from networkx import DiGraph
 import json
+import networkx as nx
 
 
-class Game(DiGraph):
+class Game(nx.DiGraph):
     """ base class for game graphs"""
 
     @classmethod
@@ -29,15 +29,7 @@ class EnergyGame(Game):
     def playernodes(self, player):
         return [v for v in self.nodes() if self.node[v]['owner'] == player]
 
-    def weight(self, e):
+    def effect(self, e):
         """ shortcut to extract the effect of an edge """
         src, trg = e
         return self.edge[src][trg]['effect']
-
-    def maxdrop(self, node=None):
-        def min_successor_effect(v):
-            return min([0] + [self[v][nbr]['effect'] for nbr in self[v]])
-        if node is None:
-            return max(-min(0, min_successor_effect(v)) for v in self.nodes())
-        else:
-            return -min(0, min_successor_effect(node))

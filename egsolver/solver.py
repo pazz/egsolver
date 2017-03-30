@@ -19,7 +19,7 @@ class Solver(object):
     def optimal_strategy(self):
         eg = self.game
         win = self.win
-        weight = self.game.weight
+        effect = self.game.effect
         playernodes = eg.playernodes(0)
 
         if win:
@@ -29,7 +29,7 @@ class Solver(object):
 
                 # pick the one where its value after getting there is minimal
                 def needs_energy(t):
-                    return win[t] - weight((v, t))
+                    return win[t] - effect((v, t))
                 return min(winsuccs, key=needs_energy)
             opt = {v: opt_succ(v) for v in playernodes if win[v] >= 0}
         else:
@@ -61,25 +61,32 @@ class ProgressMeasureSolver(Solver):
         adj = nx.to_numpy_matrix(eg, nonedge=0, weight=None).astype(np.bool)
         weightmatrix = nx.to_numpy_matrix(eg, weight="effect").astype(np.int)
         weightmatrix = np.ma.array(weightmatrix, mask=np.invert(adj))
+        # TODO: don't use masked arrays, apparently they are slow
 
         # compute top element above with we cut off
-        cutoff = sum(eg.maxdrop(v) for v in eg) + 1
+        em = nx.to_numpy_matrix(eg, weight="effect")
+        maxinc = np.max(em)
+
+        def maxdrop_from(src):
+            return -np.min(em[src])
+
+        cutoff = sum(maxdrop_from(v) for v in eg) + 1
         logging.debug("CUTOFF = %d" % cutoff)
-        top = cutoff + max(eg.maxdrop(), 1)
+        top = cutoff + maxinc
         logging.debug("TOP = %d" % top)
 
         # bitvector to remember set of states to reconsider
         dirty = np.matrix([True] * n)
 
         # initialize progress measure
-        # we'll use an intvector with (initially empty) bitmask
+        # we'll use an integer vector with (initially empty) bitmask
         pm = np.zeros(n, dtype=np.int).view(np.ma.MaskedArray)
         for v in eg.nodes():  # sinks should be losing.
             if not adj[v].any():
                 pm[v] = top   # mark them so
                 dirty[0, v] = False   # mark them as done
 
-        # define formatter used in logging etc
+        # define formatter used in logging
         def as_set(bm):
             return {v for v in eg.nodes() if bm[0, v]}
         logging.debug("dirty: %s" % as_set(dirty))
@@ -116,7 +123,7 @@ class ProgressMeasureSolver(Solver):
                 if adj.T[v].any():
                     logging.debug("enqueue predecessors: %s" % as_set(adj.T[v]))
                     np.bitwise_or(dirty, adj.T[v], out=dirty)
-                    # TODO: don't enqueue sinks
+                    # TODO: don't enqueue sinks / stuff with value top
 
         logging.debug("measure: %s" % pm)
         # remember and return the progress measure = winning region
