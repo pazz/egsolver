@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # Copyright (C) 2017  Patrick Totzke <patricktotzke@gmail.com>
 # This file is released under the GNU GPL, version 3 or a later revision.
 
@@ -18,6 +18,6 @@ setup(name='egsolver',
           'console_scripts':
               ['egsolver = egsolver.main:main'],
       },
-      install_requires=['networkx'],
+      install_requires=['networkx', 'numpy'],
       provides=['egsolver'],
       )
