@@ -68,18 +68,29 @@ GAME_FORMATTERS = {
 }
 
 
-def result_format_report(game, solver):
-    output = "winning region: %s\n" % solver.win
-    #output += "an optimal strategy: %s" % solver.optimal_strategy()
-    return output
-
-
-def result_format_json(game, solver):
+def result_format_report(game, solver, time):
+    res = "This game has %d nodes and %d edges.\n" % (len(game.nodes()),
+                                                      len(game.edges()))
+    res += "The winning region is: %s\n" % solver.win
     opt = solver.optimal_strategy()
-    return json.dumps({'win': solver.win, 'opt': opt})
+    if opt:
+        opt = ", ".join([ "%d-->%d" % (s,t) for (s,t) in opt.items()])
+        res += "An optimal strategy is: %s\n" % opt
+    res += "It took me %fs to solve this game.\n" % time
+    res += "Goodbye."
+    return res
 
 
-def result_format_dot(game, solver):
+def result_format_json(game, solver, time):
+    opt = solver.optimal_strategy()
+    return json.dumps({
+        'win': solver.win,
+        'opt': opt,
+        'time': time
+    })
+
+
+def result_format_dot(game, solver, time):
     win = solver.win
     opt = solver.optimal_strategy()
     nx.set_node_attributes(game, "win", win)

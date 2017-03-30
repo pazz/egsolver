@@ -46,7 +46,7 @@ def solve(args):
 
     logging.info("writing output..")
     formatter = RESULT_FORMATTERS[args.outfmt]
-    args.outfile.write(formatter(eg, solver))
+    args.outfile.write(formatter(eg, solver, delay))
 
 
 COMMANDS = {
