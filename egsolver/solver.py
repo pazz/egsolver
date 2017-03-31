@@ -52,7 +52,7 @@ class ProgressMeasureSolver(Solver):
     """
 
     def solve(self):
-        # shortcuts for quick lookups
+        # some shorthands
         eg = self.game
         n = nx.number_of_nodes(eg)
         owner = nx.get_node_attributes(eg, 'owner')
@@ -63,7 +63,7 @@ class ProgressMeasureSolver(Solver):
         weightmatrix = np.ma.array(weightmatrix, mask=np.invert(adj))
         # TODO: don't use masked arrays, apparently they are slow
 
-        # compute top element above with we cut off
+        # compute top element above wich we cut off
         em = nx.to_numpy_matrix(eg, weight="effect")
         maxinc = np.max(em)
 
@@ -87,9 +87,9 @@ class ProgressMeasureSolver(Solver):
                 dirty[0, v] = False   # mark them as done
 
         # define formatter used in logging
-        def as_set(bm):
-            return {v for v in eg.nodes() if bm[0, v]}
-        logging.debug("dirty: %s" % as_set(dirty))
+        def set_str(bm):
+            return "{%s}" % ",".join({str(v) for v in eg.nodes() if bm[0, v]})
+        logging.debug("dirty: %s" % set_str(dirty))
 
         # compute the new measure for state v
         bestfor = {0: np.min, 1: np.max}  # player 0 is the minimizer
@@ -103,7 +103,7 @@ class ProgressMeasureSolver(Solver):
         # main loop
         while dirty.any():
             logging.debug("measure: %s" % pm)
-            logging.debug("dirty states: %s" % as_set(dirty))
+            logging.debug("dirty states: %s" % set_str(dirty))
 
             v = dirty.argmax()   # pick some dirty state
             dirty[0, v] = False   # mark it not dirty
@@ -120,9 +120,10 @@ class ProgressMeasureSolver(Solver):
                 pm[v] = nextval
 
                 # mark predecessors dirty if there are any
-                if adj.T[v].any():
-                    logging.debug("enqueue predecessors: %s" % as_set(adj.T[v]))
-                    np.bitwise_or(dirty, adj.T[v], out=dirty)
+                preds = adj.T[v]
+                if preds.any():
+                    logging.debug("enqueue predecessors: %s" % set_str(preds))
+                    np.bitwise_or(dirty, preds, out=dirty)
                     # TODO: don't enqueue sinks / stuff with value top
 
         logging.debug("measure: %s" % pm)

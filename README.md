@@ -1,5 +1,6 @@
-Egsolver solves finite, two-player energy games [[0],[1],[2]].
-It is written in python and loosely motivated by the [pgsolver][pgsolver] suite for parity games.
+Egsolver solves finite, two-player energy games [[0],[1],[2]]. It computes the winning region, and a winning strategy for the energy player using a simple progress measure refinement procedure (see e.g., [2]).
+
+It is written in python and loosely motivated by the [pgsolver][pgsolver] suite for [parity][parity games].
 
 Installation
 ------------
@@ -32,7 +33,7 @@ Now install egsolver using the setup script:
 ./setup.py install --user
 ```
 
-This should install the executable as `$HOME.local/bin/egsolver`.
+This should install the executable as `$HOME/.local/bin/egsolver`.
 
 
 Usage
@@ -41,7 +42,7 @@ Usage
 There are currently three subcommands: `convert`, `generate`, and `solve`.
 
 ```
-$egsolver -h
+>egsolver -h
 
 usage: egsolver [-h] [-v] [--version] [-l LOGFILE] {convert,generate,solve} ...
 
@@ -78,7 +79,8 @@ egsolver generate 5 0.5 0.5 10 | egsolver solve -f dot | xdot -
 
 Input Format
 ------------
-egsolver uses a custom [JSON][json] format.
+egsolver uses a custom [JSON][json] format, designed with portability and
+later extensions to [other][parity] [mp][types] of games in mind
 To see an example, just generate a random game graph:
 
 ```
@@ -92,7 +94,9 @@ egsolver generate 5 0.5 0.5 10
 [dot]: https://en.wikipedia.org/wiki/DOT_(graph_description_language)
 [pip]: https://pip.pypa.io
 [pgsolver]: https://github.com/tcsprojects/pgsolver
+[parity]: https://en.wikipedia.org/wiki/Parity_game
 
 [0]: http://dx.doi.org/10.1007/978-3-540-85778-5_4
 [1]: http://dx.doi.org/10.1007/978-3-540-45212-6_9
 [2]: http://dx.doi.org/10.1007/s10703-010-0105-x
+[mpg]: http://dx.doi.org/10.1016/0304-3975(95)00188-3
