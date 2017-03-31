@@ -1,6 +1,7 @@
-Egsolver solves finite, two-player energy games [[0],[1],[2]]. It computes the winning region, and a winning strategy for the energy player using a simple progress measure refinement procedure (see e.g., [2]).
+Egsolver solves finite, two-player energy games [[0],[1],[2]].
+It computes the winning region and a winning strategy for the energy player using a simple progress measure refinement procedure (see e.g. [[2]]).
 
-It is written in python and loosely motivated by the [pgsolver][pgsolver] suite for [parity][parity games].
+It is written in python and loosely motivated by the [pgsolver][pgsolver] suite for [parity games][parity].
 
 Installation
 ------------
@@ -62,15 +63,20 @@ commands:
     solve               solve a game
 ```
 
-Also check out `egsolver solve -h` etc.
+Also check out `egsolver solve -h` etc..
 
+To generate a random game (with 5 states, edge- and owner probability 1/2 and maximal absolute effect 10):
+
+```
+egsolver generate 5 0.5 0.5 10
+```
 To generate and solve a random game:
 
 ```
 egsolver generate 5 0.5 0.5 10 | egsolver solve
 ```
 
-To format the result in [dot][dot]-format and display with `xdot`:
+To further format the result in [dot][dot]-format and display with `xdot`:
 
 ```
 egsolver generate 5 0.5 0.5 10 | egsolver solve -f dot | xdot -
@@ -80,12 +86,8 @@ egsolver generate 5 0.5 0.5 10 | egsolver solve -f dot | xdot -
 Input Format
 ------------
 egsolver uses a custom [JSON][json] format, designed with portability and
-later extensions to [other][parity] [mp][types] of games in mind
-To see an example, just generate a random game graph:
-
-```
-egsolver generate 5 0.5 0.5 10
-```
+later extensions to [other][parity] [types][mpg] of games in mind.
+To see an example, just generate a random game graph.
 
 
 [np]: http://www.numpy.org
