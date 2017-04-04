@@ -6,7 +6,7 @@ from timeit import timeit
 import argparse
 import logging
 
-from .energygame import EnergyGame
+from .games import EnergyGame
 from .generators import random_energy_game
 from .solvers import ProgressMeasureSolver as Solver
 from .formatters import GAME_FORMATTERS, RESULT_FORMATTERS

@@ -3,7 +3,7 @@
 
 import random
 import networkx as nx
-from .energygame import EnergyGame
+from .games import EnergyGame
 
 
 def random_energy_game(n, d, o, maxeffect, mineffect=None, nosinks=False):
