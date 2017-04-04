@@ -22,9 +22,13 @@ def convert(args):
     if args.gametype == "parity":
         logging.debug("converting to paritygame..")
         game = energy_to_parity(game)
+    if args.outfmt == "pgsolver":
+        out = game.to_pgsolver_format()
+    else:
+        formatter = GAME_FORMATTERS[args.outfmt]
+        out = formatter(game)
     logging.info("writing output..")
-    formatter = GAME_FORMATTERS[args.outfmt]
-    args.outfile.write(formatter(game))
+    args.outfile.write(out)
 
 
 def generate(args):
@@ -84,7 +88,8 @@ def main():
                                 type=argparse.FileType('w'),
                                 default=sys.stdout)
     parser_convert.add_argument('-f', '-outfmt', dest='outfmt',
-                                choices=GAME_FORMATTERS.keys(), default='eg',
+                                choices=["pgsolver"] + GAME_FORMATTERS.keys(),
+                                default='eg',
                                 help='output format; defaults to \'eg\'')
     parser_convert.add_argument('-t', '-type', dest='gametype',
                                 default='energy', choices={'energy', 'parity'},
@@ -117,6 +122,11 @@ def main():
 
     # parse arguments
     args = parser.parse_args()
+
+    # complain if arguments clash
+    if args.cmd == "convert":
+        if (args.gametype, args.outfmt) == ('energy','pgsolver'):
+            parser.error('out format \'pgsolver\' only works for parity games')
 
     # set up debug logging
     levels = [logging.WARNING, logging.INFO, logging.DEBUG]
