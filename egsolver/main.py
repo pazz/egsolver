@@ -8,7 +8,7 @@ import logging
 
 from .games import EnergyGame
 from .generators import random_energy_game
-from .solvers import ProgressMeasureSolver as Solver
+from .solvers import SOLVERS
 from .formatters import GAME_FORMATTERS, RESULT_FORMATTERS
 from .reductions import energy_to_parity
 from . import __version__, __shortinfo__
@@ -46,7 +46,7 @@ def solve(args):
     logging.debug("got game:\n%s" % eg)
 
     logging.info("instanciating solver..")
-    solver = Solver(eg)
+    solver = SOLVERS[args.solver](eg)
 
     logging.info("solving..")
     delay = timeit(solver.solve, number=1)
@@ -119,6 +119,9 @@ def main():
     parser_solve.add_argument('-f', '-outfmt', dest='outfmt', default='report',
                               choices=RESULT_FORMATTERS.keys(),
                               help='output format; defaults to \'report\'')
+    parser_solve.add_argument('-s', '-solver', dest='solver', default='pm',
+                              choices=SOLVERS.keys(),
+                              help='the solver to use; defaults to \'pm\'')
 
     # parse arguments
     args = parser.parse_args()
