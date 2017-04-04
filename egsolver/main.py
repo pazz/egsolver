@@ -7,20 +7,24 @@ import argparse
 import logging
 
 from .energygame import EnergyGame
-from .solver import ProgressMeasureSolver as Solver
 from .generators import random_energy_game
+from .solvers import ProgressMeasureSolver as Solver
 from .formatters import GAME_FORMATTERS, RESULT_FORMATTERS
+from .reductions import energy_to_parity
 from . import __version__, __shortinfo__
 
 
 def convert(args):
     """ convert game description to another format """
     logging.info("parsing input..")
-    eg = EnergyGame.from_game_string(args.infile.read())
-    logging.debug("got game:\n%s" % eg)
+    game = EnergyGame.from_game_string(args.infile.read())
+    logging.debug("got game:\n%s" % game)
+    if args.gametype == "parity":
+        logging.debug("converting to paritygame..")
+        game = energy_to_parity(game)
     logging.info("writing output..")
     formatter = GAME_FORMATTERS[args.outfmt]
-    args.outfile.write(formatter(eg))
+    args.outfile.write(formatter(game))
 
 
 def generate(args):
@@ -82,6 +86,9 @@ def main():
     parser_convert.add_argument('-f', '-outfmt', dest='outfmt',
                                 choices=GAME_FORMATTERS.keys(), default='eg',
                                 help='output format; defaults to \'eg\'')
+    parser_convert.add_argument('-t', '-type', dest='gametype',
+                                default='energy', choices={'energy', 'parity'},
+                                help='the type of game to reduce to')
 
     # parameters for the 'generate' subcommand
     parser_generate = subparsers.add_parser('generate', help=generate.__doc__)
