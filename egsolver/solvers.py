@@ -161,6 +161,7 @@ class Z3Solver(Solver):
         effect = self.game.effect
 
         s = z3.Solver()
+        s = z3.Optimize()
         # initialize progress measure
         EPM = [z3.Int("EPM%d" % i) for i in range(n)]  # not top
         TOP = [z3.Bool("TOP %d" % i) for i in range(n)]  # top
@@ -217,6 +218,9 @@ class Z3Solver(Solver):
             )
             logging.debug("top constraint for state %d:\n %s" % (v,clause))
             s.add(clause)
+
+        # make sure we get the minimal sulution
+        s.minimize(sum(EPM))
 
         # call SMT solver
         res = s.check()
