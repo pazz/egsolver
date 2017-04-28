@@ -141,10 +141,11 @@ class Z3Solver(Solver):
     Solver that uses Microsoft's Z3 SMT solver (https://github.com/Z3Prover/z3)
     to guess and verify a game progress measure.
 
-    The idea behind the constructed formulae is that
-    G,B : states --> \Z
-    encode gain / bias functions
-
+    The progress measure condition directly translated
+    into constraints over an uninterpreted function En: N --> N;
+    Losing states are identified as those with negative Mean-Payoff.
+    Mean-Payoff values are expressed using Gain/Bias functions,
+    (see e.g. :doi:`10.4230/LIPIcs.FSTTCS.2016.44`).
     """
 
     def __init__(self, eg, initial_credit=1):
@@ -157,22 +158,19 @@ class Z3Solver(Solver):
         eg = self.game
         n = nx.number_of_nodes(eg)
         owner = nx.get_node_attributes(eg, 'owner')
-        logging.debug(owner)
         effect = self.game.effect
 
         s = z3.Solver()
         s = z3.Optimize()
-        # initialize progress measure
-        EPM = [z3.Int("EPM%d" % i) for i in range(n)]  # not top
-        TOP = [z3.Bool("TOP %d" % i) for i in range(n)]  # top
-
-        G = [z3.Int("GAIN%d" % i) for i in range(n)]  # gain
-        B = [z3.Int("BIAS%d" % i) for i in range(n)]  # bias
-        logging.debug(G)
+        # define energy measure, Gain and Bias as uninterpreted functions
+        EN = z3.Function('Energy', z3.IntSort(), z3.IntSort())
+        Gain = z3.Function('Gain', z3.IntSort(), z3.RealSort())
+        Bias = z3.Function('Bias', z3.IntSort(), z3.RealSort())
 
         def minmax_among(player, x, Y):
             """
-            builds z3 constraint encoding that x is less/larger equal
+            builds z3 constraint encoding that x is maximum/minimum of Y,
+            depending on the parity of the first parameter
             to all values in Y.
             """
             if player == 1:
@@ -184,68 +182,84 @@ class Z3Solver(Solver):
 
         for v in eg.nodes():
             succs = eg.successors(v)
-            # Spoiler states
-            # max gain among successors
             logging.debug(succs)
 
             # Gain constraint
-            clause = minmax_among(owner[v], G[v], [G[w] for w in succs])
+            # Gain(v) is min/max Gain(w) over all successors w
+            clause = minmax_among(owner[v], Gain(v), [Gain(w) for w in succs])
             logging.debug("Gain constraint for state %d:\n %s" % (v,clause))
             s.add(clause)
 
             # Bias constraint
-            clause = minmax_among(owner[v],
-                                  B[v],
-                                  [effect((v, w)) - G[v] + B[w] for w in succs])
+            # Bias(v) is min/max {edgecost - Gain(v) + Bias(w) } over successors
+            # w with equal Gain
+            if owner[v] == 0: # max
+                forall = z3.And(
+                    [
+                     z3.Or(Gain(v) != Gain(w),
+                           Bias(v) >= effect((v, w)) - Gain(v) + Bias(w))
+                     for w in succs
+                    ]
+                )
+                exists = z3.Or(
+                    [
+                     z3.And(Gain(v) == Gain(w),
+                            Bias(v) == effect((v, w)) - Gain(v) + Bias(w))
+                     for w in succs
+                    ]
+                )
+                clause = z3.And(forall,exists)
+            else:
+                forall = z3.And(
+                    [
+                     z3.Or(Gain(v) != Gain(w),
+                           Bias(v) <= effect((v, w)) - Gain(v) + Bias(w))
+                     for w in succs
+                    ]
+                )
+                exists = z3.Or(
+                    [
+                     z3.And(Gain(v) == Gain(w),
+                            Bias(v) == effect((v, w)) - Gain(v) + Bias(w))
+                     for w in succs
+                    ]
+                )
+                clause = z3.And(forall,exists)
+
             logging.debug("Bias constraint for state %d:\n %s" % (v,clause))
             s.add(clause)
 
             # Energy progress measure constraints
-            sc = [EPM[v] >= EPM[w] - effect((v,w)) for w in succs]
-            if owner[v] == 1:
+            sc = [EN(v) >= EN(w) - effect((v,w)) for w in succs]
+            if owner[v] == 1:  # pick maximum among successors
                 not_top = z3.And(sc)
-            else:
+            else:  # pick minimum (as we later minimize the sum of EN
                 not_top = z3.Or(sc)
-            clause = z3.Or(TOP[v], not_top)
+            # the energy-proress constraint should hold for states with
+            # non-negative mean-payoff.
+            clause = z3.Implies(Gain(v) >=0, not_top)
             logging.debug("ePM constraint for state %d:\n %s" % (v,clause))
             s.add(clause)
-            s.add(EPM[v] >= 0)
-
-            # EPM should not be top for all states with mean-payoff = G  > 0.
-            clause = z3.And(
-                z3.Implies(G[v] >=0, z3.Not(TOP[v])),
-                z3.Implies(z3.Not(TOP[v]),G[v] >=0)
-            )
-            logging.debug("top constraint for state %d:\n %s" % (v,clause))
-            s.add(clause)
+            s.add(EN(v) >= 0)
 
         # make sure we get the minimal sulution
-        s.minimize(sum(EPM))
+        s.minimize(sum(EN(v) for v in range(n)))
 
-        # call SMT solver
+        # call SMT solver and prepare result
         res = s.check()
         logging.info("res: %s" % res)
         if res == z3.sat:
             model = s.model()
             logging.info("MODEL: %s\n\n" % model)
             for v in range(n):
-                logging.info("TOP: %d: %s" % (v, z3.is_true(model[TOP[v]])))
-            #for v in range(n):
-            #    logging.info("EPM: %d: %s" % (v, model[EPM[v]].as_long()) )
-                logging.info(v)
-                logging.info(model[EPM[v]])
+                logging.debug("TOP: %d: %s" % (v, model.eval(Gain(v) < 0)))
 
-            def top_as_minus_one(i):
-                if z3.is_true(model[TOP[i]]):
+            def top_as_minus_one(v):
+                if z3.is_true(model.eval(Gain(v) < 0)):
                     return -1
                 else:
-                    val_or_none = model[EPM[v]]
-                    if val_or_none is None:
-                        return 0
-                    else:
-                        return val_or_none.as_long()
+                    return model.eval(EN(v)).as_long()
 
-        #return {v:-1 for v in eg.nodes()}
             self.win = {v: top_as_minus_one(v) for v in eg.nodes()}
         return self.win
 
