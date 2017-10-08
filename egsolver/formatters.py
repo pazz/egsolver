@@ -51,7 +51,7 @@ def game_format_dot(game):
     shape = {}
     for v in game.nodes():
         shape[v] = "box" if game.node[v]['owner'] else "diamond"
-    nx.set_node_attributes(game, "shape", shape)
+    nx.set_node_attributes(game, shape, name='shape')
 
     return "digraph G {{\n{}\n{}\n}}\n".format(
         '\n'.join([dotnode(v) for v in game.nodes()]),
@@ -89,7 +89,7 @@ def result_format_json(game, solver, time):
 def result_format_dot(game, solver, time):
     win = solver.win
     opt = solver.optimal_strategy()
-    nx.set_node_attributes(game, "win", win)
+    nx.set_node_attributes(game, win, name='win')
 
     # color nodes according to who wins
     logging.debug(opt)
@@ -100,8 +100,8 @@ def result_format_dot(game, solver, time):
         color[v] = "green" if win[v] >= 0 else "red"
         label[v] = "%d (%d)" % (v, win[v]) if win[v]>=0 else str(v)
 
-    nx.set_node_attributes(game, "label", label)
-    nx.set_node_attributes(game, "color", color)
+    nx.set_node_attributes(game, label, name='label')
+    nx.set_node_attributes(game, color, name='color')
 
     # color edges to indicate optimal moves
     color = {}
@@ -109,7 +109,7 @@ def result_format_dot(game, solver, time):
         if src in opt and opt[src] == trg:
             color[(src,trg)] = "green"
     logging.debug(color)
-    nx.set_edge_attributes(game, "color", color)
+    nx.set_edge_attributes(game, color, name='color')
 
     return game_format_dot(game)
 
