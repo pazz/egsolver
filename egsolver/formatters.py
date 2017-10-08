@@ -48,10 +48,6 @@ def game_format_dot(game):
         return "%d -> %d [%s];" % (s, t, propsfmt(game.edge[s][t]))
 
     # shape nodes according to owner
-    effect = nx.get_edge_attributes(game, "effect")
-    nx.set_edge_attributes(game, "label", effect)
-
-    # shape nodes according to owner
     shape = {}
     for v in game.nodes():
         shape[v] = "box" if game.node[v]['owner'] else "diamond"
