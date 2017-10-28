@@ -76,7 +76,7 @@ def result_format_report(game, solver, time):
         opt = ", ".join([ "%d-->%d" % (s,t) for (s,t) in opt.items()])
         res += "An optimal strategy is: %s\n" % opt
     res += "It took me %fs to solve this game.\n" % time
-    res += "Goodbye."
+    res += "Goodbye.\n"
     return res
 
 
