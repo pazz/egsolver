@@ -18,6 +18,6 @@ setup(name='egsolver',
           'console_scripts':
               ['egsolver = egsolver.main:main'],
       },
-      install_requires=['networkx', 'numpy'],
+      install_requires=['networkx>=2.0', 'numpy'],
       provides=['egsolver'],
       )
