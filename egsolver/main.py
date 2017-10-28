@@ -144,5 +144,5 @@ def main():
         COMMANDS[args.cmd](args)
         sys.exit(0)
     except Exception as e:
-        logging.exception(e)
+        logging.error(e)
         sys.exit(1)
