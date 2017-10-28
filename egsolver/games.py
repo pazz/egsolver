@@ -15,10 +15,13 @@ class Game(nx.DiGraph):
         """
         gameinfo = json.loads(game_as_string)
         game = cls()
-        for v, attrs in gameinfo['nodes']:
-            game.add_node(v, attrs)
-        for src, trg, attrs in gameinfo['edges']:
-            game.add_edge(src, trg, attrs)
+        for v in gameinfo['nodes']:
+            id = v.pop('id')
+            game.add_node(id, **v)
+        for e in gameinfo['edges']:
+            src = e.pop('source')
+            trg = e.pop('target')
+            game.add_edge(src, trg, **e)
         return game
 
 
@@ -31,8 +34,7 @@ class EnergyGame(Game):
 
     def effect(self, e):
         """ shortcut to extract the effect of an edge """
-        src, trg = e
-        return self.edge[src][trg]['effect']
+        return self.edges[e]['effect']
 
 
 class ParityGame(Game):
