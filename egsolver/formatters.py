@@ -15,10 +15,12 @@ def game_format_eg(game, indent=2):
         + "\"edges\":{edges}\n}}"
 
     def nodeline(v):
-        return indent * " " + json.dumps((v, game.node[v]))
+        return indent * " " + json.dumps({'id':v,
+                                          'owner':game.node[v]['owner']})
 
     def edgeline(e):
-        return indent * " " + json.dumps(e)
+        return indent * " " + json.dumps({'source':e[0], 'target':e[1],
+                                          'effect':e[2]['effect']})
 
     elist = nx.to_edgelist(game)
     elist_json = "[\n" + ",\n".join([edgeline(e) for e in elist]) + "\n]"
@@ -45,7 +47,8 @@ def game_format_dot(game):
 
     def dotedge(e):
         s, t = e
-        return "%d -> %d [%s];" % (s, t, propsfmt(game.edge[s][t]))
+        p = propsfmt(game.edges[e])
+        return "%d -> %d [%s];" % (s, t, p)
 
     # shape nodes according to owner
     shape = {}
