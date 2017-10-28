@@ -12,18 +12,19 @@ def game_format_eg(game, indent=2):
     """
     GAME_FILE_FORMAT = "{{\n\"objective\": \"{objective}\",\n"\
         + "\"nodes\":{nodes},\n" \
-        + "\"edges\":{edges}\n}}"
+        + "\"edges\":{edges}\n}}"\
+        + "\n"
 
     def nodeline(v):
         return indent * " " + json.dumps({'id':v,
                                           'owner':game.node[v]['owner']})
 
     def edgeline(e):
-        return indent * " " + json.dumps({'source':e[0], 'target':e[1],
-                                          'effect':e[2]['effect']})
+        edict = game.edges[e]
+        edict.update({'source':e[0], 'target':e[1]})
+        return indent * " " + json.dumps(edict)
 
-    elist = nx.to_edgelist(game)
-    elist_json = "[\n" + ",\n".join([edgeline(e) for e in elist]) + "\n]"
+    elist_json = "[\n" + ",\n".join([edgeline(e) for e in game.edges]) + "\n]"
 
     nlist = game.nodes()
     nlist_json = "[\n" + ",\n".join([nodeline(v) for v in nlist]) + "\n]"
@@ -61,6 +62,7 @@ def game_format_dot(game):
         '\n'.join([dotedge(e) for e in game.edges()])
     )
 
+
 GAME_FORMATTERS = {
     'eg': game_format_eg,
     'dot': game_format_dot,
@@ -86,7 +88,7 @@ def result_format_json(game, solver, time):
         'win': solver.win,
         'opt': opt,
         'time': time
-    })
+    }) + '\n'
 
 
 def result_format_dot(game, solver, time):
