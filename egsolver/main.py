@@ -88,7 +88,7 @@ def main():
                                 type=argparse.FileType('w'),
                                 default=sys.stdout)
     parser_convert.add_argument('-f', '-outfmt', dest='outfmt',
-                                choices=["pgsolver"] + GAME_FORMATTERS.keys(),
+                                choices=["pgsolver"] + list(GAME_FORMATTERS),
                                 default='eg',
                                 help='output format; defaults to \'eg\'')
     parser_convert.add_argument('-t', '-type', dest='gametype',
@@ -104,7 +104,7 @@ def main():
     parser_generate.add_argument('-s', '--nosinks', action='store_true',
                                  help='replace sinks with negative self-loops')
     parser_generate.add_argument('-f', '-outfmt', dest='outfmt',
-                                 choices=GAME_FORMATTERS.keys(), default='eg',
+                                 choices=list(GAME_FORMATTERS), default='eg',
                                  help='output format; defaults to \'eg\'')
     parser_generate.add_argument('outfile', nargs='?', help=outfile_help,
                                  type=argparse.FileType('w'),
